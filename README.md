@@ -1,5 +1,7 @@
 # jev-riffs
 
+![jev-riffs ripping the Swan Lake theme — piano roll with the motif's occurrences highlighted, motif cards ranked by significance](title.png)
+
 A music pattern ripper. Tokenize a MIDI file into an interval string, mine it
 for repeating units in code, and have [Jev](https://typesafe.ai) — TypeSafe's
 System One model, which answers typed questions instead of generating text —

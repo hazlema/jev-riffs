@@ -25,6 +25,22 @@ test("returns empty for a sequence with no full repeats", () => {
   expect(findCandidates([9, 1, 7, 3, 0, 4])).toEqual([]);
 });
 
+test("drops rotation echoes, keeping the higher-coverage phase", () => {
+  // [2,1] is [1,2] shifted; it must not survive as a separate candidate.
+  const units = findCandidates([1, 2, 1, 2, 1, 2, 5, 7, 8, 9, 7, 8, 9, 0, 1, 2]).map((c) =>
+    c.unit.join(",")
+  );
+  expect(units).toContain("1,2");
+  expect(units).not.toContain("2,1");
+});
+
+test("drops a superstring that does not out-cover the unit it contains", () => {
+  // The 42-number gauntlet: [7,3,8,2,4,1]×2 (cov 12) rides on [7,3,8,2,4]×3
+  // (cov 15) — a noise-tail superstring, dropped.
+  const seq = [6,1,0,5,9,7,3,8,2,4,1,1,6,0,8,7,3,8,2,4,5,0,3,2,9,6,9,0,7,3,8,2,4,1,7,0,4,4,2,8,6,5];
+  expect(findCandidates(seq)).toEqual([{ unit: [7, 3, 8, 2, 4], count: 3 }]);
+});
+
 // --- extractPatterns (jev judges each candidate) ---
 
 function queuedFetch(bodies: unknown[]): typeof fetch {
@@ -42,28 +58,22 @@ const TWO_PATTERN_SEQ = [1, 2, 1, 2, 1, 2, 5, 7, 8, 9, 7, 8, 9, 0, 1, 2];
 
 test("accepts the candidates jev confirms and rejects the rest", async () => {
   process.env.TYPESAFE_API_KEY = "test-key";
-  // Candidates arrive ranked: [1,2], [7,8,9], then the [2,1] phase-echo.
-  const script = queuedFetch([noul(0.9), noul(0.85), noul(0.2)]);
+  // Candidates arrive ranked and deduped: [1,2], [7,8,9] — no [2,1] echo.
+  const script = queuedFetch([noul(0.9), noul(0.2)]);
   expect(await extractPatterns(TWO_PATTERN_SEQ, 100, script)).toEqual({
-    patterns: [
-      { unit: [1, 2], count: 4 },
-      { unit: [7, 8, 9], count: 2 },
-    ],
-    tries: 3,
+    patterns: [{ unit: [1, 2], count: 4 }],
+    tries: 2,
     budgetExhausted: false,
   });
 });
 
 test("stops at the budget ceiling and flags it", async () => {
   process.env.TYPESAFE_API_KEY = "test-key";
-  const script = queuedFetch([noul(0.9), noul(0.85)]);
-  const res = await extractPatterns(TWO_PATTERN_SEQ, 2, script);
+  const script = queuedFetch([noul(0.9)]);
+  const res = await extractPatterns(TWO_PATTERN_SEQ, 1, script);
   expect(res).toEqual({
-    patterns: [
-      { unit: [1, 2], count: 4 },
-      { unit: [7, 8, 9], count: 2 },
-    ],
-    tries: 2,
+    patterns: [{ unit: [1, 2], count: 4 }],
+    tries: 1,
     budgetExhausted: true,
   });
 });

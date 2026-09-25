@@ -53,6 +53,11 @@ function containsBlock(outer: number[], inner: number[]): boolean {
   return false;
 }
 
+// [2,1] is [1,2] caught mid-cycle — same pattern, different phase.
+function isRotation(a: number[], b: number[]): boolean {
+  return a.length === b.length && containsBlock([...a, ...a], b);
+}
+
 export function findCandidates(seq: number[], top = 20): Candidate[] {
   const seen = new Map<string, Candidate>();
   const maxLen = Math.floor(seq.length / 2);
@@ -66,7 +71,7 @@ export function findCandidates(seq: number[], top = 20): Candidate[] {
     }
   }
   const all = [...seen.values()];
-  return all
+  const ranked = all
     .filter(
       // Shadow: a sub-block of a bigger candidate that never out-occurs it
       // (e.g. [7,3] inside [7,3,8,2,4], both ×3) adds nothing — drop it.
@@ -77,8 +82,19 @@ export function findCandidates(seq: number[], top = 20): Candidate[] {
         )
     )
     .filter((c) => !isPeriodic(c.unit))
-    .sort((x, y) => y.count * y.unit.length - x.count * x.unit.length)
-    .slice(0, top);
+    .sort((x, y) => y.count * y.unit.length - x.count * x.unit.length);
+  // Best-first dedupe: drop rotation echoes of a kept candidate, and
+  // superstrings (e.g. unit + trailing noise) that don't out-cover the
+  // kept unit they contain.
+  const coverage = (c: Candidate) => c.count * c.unit.length;
+  const kept: Candidate[] = [];
+  for (const c of ranked) {
+    const dominated = kept.some(
+      (k) => isRotation(k.unit, c.unit) || (containsBlock(c.unit, k.unit) && coverage(c) <= coverage(k))
+    );
+    if (!dominated) kept.push(c);
+  }
+  return kept.slice(0, top);
 }
 
 export async function extractPatterns(

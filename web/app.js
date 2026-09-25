@@ -68,10 +68,18 @@ function stopPlayback() {
   playing = [];
 }
 
-// the motif's first occurrence as relative-time synth notes
+// The motif's full section as relative-time synth notes: start at the first
+// occurrence and chain through later ones while the gap stays small, so the
+// in-between material (the rest of the passage) plays too — not just the
+// matched notes.
 function segmentOf(m) {
   const secPerTick = parsed.timing.tempoUs / 1e6 / parsed.timing.division;
-  const [a, b] = m.spans[0];
+  let [a, b] = m.spans[0];
+  for (let k = 1; k < m.spans.length; k++) {
+    const [s, e] = m.spans[k];
+    if (s - b <= m.unit.length * 2) b = e;
+    else break;
+  }
   const seg = melody.slice(a, Math.min(b + 1, melody.length));
   const t0 = seg[0][0];
   return seg.map(([tick, note], i) => {

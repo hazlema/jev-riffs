@@ -129,7 +129,7 @@ channel splitting) is on the roadmap.
 
 ## Web app
 
-`bun server.ts` — Bun.serve, zero dependencies, `PORT` env respected
+`bun run server` — Bun.serve, zero dependencies, `PORT` env respected
 (default 4173). Reads `TYPESAFE_API_KEY` from `.env` even when launched from
 another cwd.
 
@@ -166,7 +166,7 @@ The UI (vanilla JS, one canvas):
 # needs bun (https://bun.sh); no dependencies
 cp .env.example .env   # add your TYPESAFE_API_KEY
 bun test               # 54 tests, all mocked — no API calls
-bun server.ts          # web UI on http://localhost:4173
+bun run server         # web UI on http://localhost:4173 (PORT env to change)
 bun run patterns       # CLI multi-pattern demo on number sequences
 bun spike/rip.ts f.mid # the original spike, kept as a lab notebook
 ```

@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "server": "bun server.ts",
     "patterns": "bun src/patterns.ts",
     "test": "bun test"
   }

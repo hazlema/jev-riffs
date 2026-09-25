@@ -30,7 +30,7 @@ export async function handle(req: Request): Promise<Response> {
   if (p === "/") return file("web/index.html", "text/html; charset=utf-8");
   if (p === "/app.js") return file("web/app.js", "text/javascript; charset=utf-8");
   if (p === "/style.css") return file("web/style.css", "text/css; charset=utf-8");
-  if (p === "/demo.mid") return file("spike/swan.mid", "audio/midi");
+  if (p === "/demo.mid") return file("media/swan-lake.mid", "audio/midi");
 
   if (p === "/api/parse" && req.method === "POST") {
     try {

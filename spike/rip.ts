@@ -92,7 +92,7 @@ const noteName = (n: number) => `${NAMES[n % 12]}${Math.floor(n / 12) - 1}`;
 
 // --- rip ---
 
-const path = process.argv[2] ?? "spike/swan.mid";
+const path = process.argv[2] ?? "media/swan-lake.mid";
 const pick = process.argv[3] !== undefined ? Number(process.argv[3]) : undefined;
 const melody = melodyOf(parseMidi(await Bun.file(path).arrayBuffer()), pick);
 const MAX = 150; // keep mining cheap; themes state themselves early and often

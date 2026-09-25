@@ -100,6 +100,33 @@ Two operational lessons are baked in:
 `budgetExhausted: true`. Transport errors come back as `Error` values, never
 throws (see LIBRARY.md).
 
+## Not all MIDI files are created equal
+
+The ripper's results depend heavily on how the file is organized. The melody
+heuristic assumes a **type-1 SMF with one voice per track** — like the
+bundled Swan Lake: 17 named tracks (`OBOE`, `HARP`, `TREMOLOSTR`, …), each
+carrying one instrument. `melodyOf` picks a single track and monophonizes it
+top-note-per-tick, which is a sound assumption *within* one instrument's
+line.
+
+Files that intermix voices break that assumption:
+
+- **Type-0 files** (every channel merged into one track) and **piano
+  reductions** (both hands in one track) put melody, accompaniment, and bass
+  into the same note stream. Top-note-per-tick then skips between voices,
+  the interval string becomes a braid of unrelated lines, and the miner
+  surfaces units that cross voice boundaries — candidates that are real
+  repetitions of *nothing musical*. Significance scores dilute accordingly.
+- **Percussion in disguise**: drums are filtered by channel 10 convention;
+  files that put percussion on melodic channels will pollute the token
+  stream.
+
+What to look for in a good input: named instrument tracks, one voice each —
+the track picker shows note counts, and a good melody track is dense but
+essentially monophonic. If all you have is a mixed file, pick the cleanest
+track by ear and lower `cap`; proper voice separation (skyline by register,
+channel splitting) is on the roadmap.
+
 ## Web app
 
 `bun server.ts` — Bun.serve, zero dependencies, `PORT` env respected
@@ -144,8 +171,9 @@ bun run patterns       # CLI multi-pattern demo on number sequences
 bun spike/rip.ts f.mid # the original spike, kept as a lab notebook
 ```
 
-The demo button expects a MIDI at `spike/swan.mid` (not committed;
-`bitmidi.com/uploads/103013.mid` is the one used here).
+The Swan Lake demo ships in the repo (`media/swan-lake.mid`): the
+composition is public domain (Tchaikovsky, 1876); the sequencing came from
+`bitmidi.com/uploads/103013.mid`.
 
 ## Research notes
 

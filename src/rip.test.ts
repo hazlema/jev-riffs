@@ -94,3 +94,14 @@ test("empty sequence rips to no motifs with no jev calls", async () => {
     budgetExhausted: false,
   });
 });
+
+test("minNotes filters small candidates before any judging", async () => {
+  process.env.TYPESAFE_API_KEY = "test-key";
+  const sent: any[] = [];
+  // [1,2] is 3 notes — filtered at minNotes 4; only [7,8,9] (4 notes) rides
+  const script = queuedFetch([{ answers: { c0: scoreAns(2.9, 3) } }], sent);
+  const res = await rip(SEQ, 100, script, false, 10, 4);
+  expect(sent.length).toBe(1);
+  expect(sent[0].state.candidates).toEqual({ c0: [7, 8, 9] });
+  expect((res as any).motifs.map((m: any) => m.unit)).toEqual([[7, 8, 9]]);
+});

@@ -50,10 +50,11 @@ export async function rip(
   budget = 100,
   fetchImpl: typeof fetch = fetch,
   verbose = false,
-  chunkSize = 10
+  chunkSize = 10,
+  minNotes = 1 // a motif of n notes spans n-1 intervals
 ): Promise<RipResult | Error> {
   const say = (m: string) => verbose && console.log(m);
-  const candidates = findCandidates(intervals);
+  const candidates = findCandidates(intervals, 20, Math.max(2, minNotes - 1));
   say(`mined ${candidates.length} candidate(s)`);
 
   const motifs: Motif[] = [];

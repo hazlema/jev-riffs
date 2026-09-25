@@ -60,10 +60,11 @@ export async function handle(req: Request): Promise<Response> {
     try {
       const track = Number(url.searchParams.get("track") ?? "-1");
       const cap = Number(url.searchParams.get("cap") ?? "150");
+      const minNotes = Number(url.searchParams.get("minNotes") ?? "5");
       const tracks = parseMidi(await req.arrayBuffer());
       const melody = melodyOf(tracks, track >= 0 ? track : undefined).slice(0, cap);
       const notes = melody.map((n) => n.note);
-      const res = await rip(toIntervals(notes), 100);
+      const res = await rip(toIntervals(notes), 100, fetch, false, 10, minNotes);
       if (res instanceof Error) return Response.json({ error: res.message }, { status: 502 });
       return Response.json({
         melody: melody.map((n) => [n.tick, n.note]),

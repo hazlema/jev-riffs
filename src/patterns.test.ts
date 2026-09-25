@@ -93,3 +93,10 @@ test("no candidates means no jev calls and an empty result", async () => {
     budgetExhausted: false,
   });
 });
+
+test("minLen floor excludes short units from mining", () => {
+  const seq = [1, 2, 1, 2, 1, 2, 5, 7, 8, 9, 7, 8, 9, 0, 1, 2];
+  const units = findCandidates(seq, 20, 3).map((c) => c.unit.join(","));
+  expect(units).toContain("7,8,9");
+  expect(units).not.toContain("1,2");
+});

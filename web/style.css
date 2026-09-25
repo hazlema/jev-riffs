@@ -36,6 +36,21 @@ button, .filebtn, select {
 button:hover, .filebtn:hover { border-color: var(--gold); }
 button:disabled { opacity: 0.4; cursor: default; }
 .filebtn input { display: none; }
+.minlabel { color: var(--dim); font-size: 0.85rem; }
+.minlabel input {
+  width: 3.2rem;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid #2a3055;
+  border-radius: 6px;
+  padding: 0.3rem 0.4rem;
+  font: inherit;
+}
+.motif .save {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+}
 #rip { border-color: var(--gold); color: var(--gold); }
 #status { color: var(--dim); margin-left: 0.4rem; }
 

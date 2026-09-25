@@ -58,10 +58,10 @@ function isRotation(a: number[], b: number[]): boolean {
   return a.length === b.length && containsBlock([...a, ...a], b);
 }
 
-export function findCandidates(seq: number[], top = 20): Candidate[] {
+export function findCandidates(seq: number[], top = 20, minLen = 2): Candidate[] {
   const seen = new Map<string, Candidate>();
   const maxLen = Math.floor(seq.length / 2);
-  for (let len = 2; len <= maxLen; len++) {
+  for (let len = Math.max(2, minLen); len <= maxLen; len++) {
     for (let i = 0; i + len <= seq.length; i++) {
       const unit = seq.slice(i, i + len);
       const key = unit.join(",");

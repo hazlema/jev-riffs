@@ -34,6 +34,7 @@ test("api/parse returns tracks, notes and a suggested track", async () => {
   expect(json.tracks[0].name).toBe("OBOE");
   expect(json.tracks[0].notes).toEqual([[0, 60], [10, 62]]);
   expect(json.suggested).toBe(0);
+  expect(json.timing).toEqual({ division: 480, tempoUs: 500000 });
 });
 
 test("api/parse rejects non-midi bytes", async () => {

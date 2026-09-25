@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { parseMidi, melodyOf, toIntervals, noteName } from "./midi";
+import { parseMidi, parseTiming, melodyOf, toIntervals, noteName } from "./midi";
 
 // --- fixture builder: hand-assembled MIDI bytes ---
 
@@ -81,4 +81,16 @@ test("toIntervals and noteName", () => {
   expect(noteName(60)).toBe("C4");
   expect(noteName(69)).toBe("A4");
   expect(noteName(61)).toBe("C#4");
+});
+
+// --- parseTiming ---
+
+test("reads division and the first tempo event", () => {
+  const bytes = midi(track([0x00, 0xff, 0x51, 3, 0x07, 0xa1, 0x20])); // 500000 µs/quarter
+  expect(parseTiming(bytes)).toEqual({ division: 480, tempoUs: 500000 });
+});
+
+test("defaults tempo to 120bpm when the file states none", () => {
+  const bytes = midi(track([0x00, 0x90, 60, 64]));
+  expect(parseTiming(bytes)).toEqual({ division: 480, tempoUs: 500000 });
 });

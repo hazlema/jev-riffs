@@ -2,7 +2,7 @@
 // Run: bun server.ts   (PORT env respected; needs TYPESAFE_API_KEY for /api/rip)
 
 import { join } from "node:path";
-import { parseMidi, melodyOf, toIntervals, noteName } from "./src/midi";
+import { parseMidi, parseTiming, melodyOf, toIntervals, noteName } from "./src/midi";
 import { rip } from "./src/rip";
 
 const ROOT = import.meta.dir;
@@ -34,7 +34,9 @@ export async function handle(req: Request): Promise<Response> {
 
   if (p === "/api/parse" && req.method === "POST") {
     try {
-      const tracks = parseMidi(await req.arrayBuffer());
+      const bytes = await req.arrayBuffer();
+      const tracks = parseMidi(bytes);
+      const timing = parseTiming(bytes);
       const tuned = tracks
         .map((t, index) => ({ index, name: t.name, noteCount: t.notes.filter((n) => n.channel !== 9).length }))
         .filter((t) => t.noteCount > 0);
@@ -47,6 +49,7 @@ export async function handle(req: Request): Promise<Response> {
           notes: t.notes.map((n) => [n.tick, n.note]),
         })),
         suggested: suggested?.index ?? 0,
+        timing, // { division, tempoUs } → secondsPerTick for playback
       });
     } catch (e) {
       return Response.json({ error: (e as Error).message }, { status: 400 });

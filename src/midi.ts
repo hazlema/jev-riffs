@@ -75,6 +75,62 @@ export function parseMidi(data: ArrayBuffer | Uint8Array): MidiTrack[] {
   return tracks;
 }
 
+// Playback timing: ticks-per-quarter from the header and the first tempo
+// meta event (µs per quarter). seconds-per-tick = tempoUs / 1e6 / division.
+export function parseTiming(data: ArrayBuffer | Uint8Array): { division: number; tempoUs: number } {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let division = 480;
+  if (v.byteLength >= 14) {
+    const d = v.getUint16(12);
+    if (!(d & 0x8000)) division = d; // SMPTE division: keep the 480 fallback
+  }
+  let o = 8 + v.getUint32(4); // past MThd
+  let tempoUs = 500000;
+  outer: while (o + 8 <= v.byteLength) {
+    let s = "";
+    for (let i = 0; i < 4; i++) s += String.fromCharCode(v.getUint8(o + i));
+    o += 4;
+    if (s !== "MTrk") break;
+    const len = v.getUint32(o);
+    o += 4;
+    const end = o + len;
+    let running = 0;
+    const vlq = () => {
+      let x = 0, b;
+      do {
+        b = v.getUint8(o++);
+        x = (x << 7) | (b & 0x7f);
+      } while (b & 0x80);
+      return x;
+    };
+    while (o < end) {
+      vlq(); // delta
+      let status = v.getUint8(o);
+      if (status & 0x80) {
+        o++;
+        if (status < 0xf0) running = status;
+      } else status = running;
+      if (status === 0xff) {
+        const type = v.getUint8(o++);
+        const mlen = vlq();
+        if (type === 0x51 && mlen === 3) {
+          tempoUs = (v.getUint8(o) << 16) | (v.getUint8(o + 1) << 8) | v.getUint8(o + 2);
+          break outer;
+        }
+        o += mlen;
+      } else if (status === 0xf0 || status === 0xf7) {
+        o += vlq();
+      } else {
+        const kind = status & 0xf0;
+        o += kind === 0xc0 || kind === 0xd0 ? 1 : 2;
+      }
+    }
+    o = end;
+  }
+  return { division, tempoUs };
+}
+
 // Melody line: the chosen track's notes, monophonized by keeping the highest
 // note of each same-tick cluster. Default choice = densest track after
 // dropping drum-channel notes; an explicit pick takes the track as-is.

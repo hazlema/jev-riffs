@@ -56,6 +56,45 @@ function draw() {
   }
 }
 
+// --- playback: synthesize a motif's first occurrence with web audio ---
+
+let audio = null; //  AudioContext, created on first click
+let playing = []; //  scheduled nodes, stopped when a new motif plays
+
+function stopPlayback() {
+  for (const n of playing) {
+    try { n.stop(); } catch {}
+  }
+  playing = [];
+}
+
+function playMotif(m) {
+  if (!melody || !parsed?.timing) return;
+  audio ??= new (window.AudioContext || window.webkitAudioContext)();
+  stopPlayback();
+  const secPerTick = parsed.timing.tempoUs / 1e6 / parsed.timing.division;
+  const [a, b] = m.spans[0];
+  const seg = melody.slice(a, Math.min(b + 1, melody.length));
+  const t0 = seg[0][0];
+  const now = audio.currentTime + 0.05;
+  seg.forEach(([tick, note], i) => {
+    const start = now + (tick - t0) * secPerTick;
+    const next = seg[i + 1];
+    const dur = Math.min(Math.max(next ? (next[0] - tick) * secPerTick : 0.4, 0.12), 0.8);
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = 440 * Math.pow(2, (note - 69) / 12);
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(0.25, start + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
+    osc.connect(gain).connect(audio.destination);
+    osc.start(start);
+    osc.stop(start + dur + 0.05);
+    playing.push(osc);
+  });
+}
+
 // --- motif cards ---
 
 const LEVELS = ["INCIDENTAL", "FIGURE", "PHRASE", "SIGNATURE"];
@@ -71,11 +110,13 @@ function renderMotifs() {
       `<span class="badge l${lvl}">${LEVELS[lvl]} ${m.significance.toFixed(2)}</span>` +
       `<div class="preview">${m.preview}</div>` +
       `<div class="unit">[${m.unit.join(",")}]</div>` +
-      `<div class="meta">×${m.count} occurrences</div>`;
+      `<div class="meta">×${m.count} occurrences · ♪ click to play</div>`;
     el.onclick = () => {
       active = active === i ? -1 : i;
       renderMotifs();
       draw();
+      if (active === i) playMotif(m);
+      else stopPlayback();
     };
     box.appendChild(el);
   });

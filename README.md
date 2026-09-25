@@ -2,6 +2,8 @@
 
 ![jev-riffs ripping the Swan Lake theme — piano roll with the motif's occurrences highlighted, motif cards ranked by significance](title.png)
 
+🎬 **[Watch the demo](demo.mp4)** — load Swan Lake, rip it, click a motif, hear the theme.
+
 A music pattern ripper. Tokenize a MIDI file into an interval string, mine it
 for repeating units in code, and have [Jev](https://typesafe.ai) — TypeSafe's
 System One model, which answers typed questions instead of generating text —

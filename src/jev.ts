@@ -57,6 +57,39 @@ export interface JevResult {
   readonly min: string; // === last
 }
 
+function normalizeAnswer(answer: any, usage: unknown): JevResult | null {
+  if (!answer || typeof answer !== "object") return null;
+  const probabilities: Record<string, number> | undefined =
+    answer.type === "noul" && typeof answer.noul === "number"
+      ? { true: answer.noul, false: Math.round((1 - answer.noul) * 1e6) / 1e6 }
+      : answer.probabilities;
+  if (!probabilities || Object.keys(probabilities).length === 0) return null;
+  // Score keys are level numbers; the legend turns them into names.
+  const name = (k: string) => answer.legend?.[k] ?? k;
+  const entries = Object.entries(probabilities) as [string, number][];
+  const first = name(entries.reduce((a, b) => (b[1] > a[1] ? b : a))[0]);
+  const last = name(entries.reduce((a, b) => (b[1] < a[1] ? b : a))[0]);
+  return {
+    type: answer.type,
+    ...(answer.confidence !== undefined && { confidence: answer.confidence }),
+    probabilities,
+    ...(answer.legend && { legend: answer.legend }),
+    ...(answer.type === "score" && { position: answer.score }),
+    first,
+    last,
+    ...(usage ? { usage: usage as JevResult["usage"] } : {}),
+    get value() {
+      return first;
+    },
+    get max() {
+      return first;
+    },
+    get min() {
+      return last;
+    },
+  };
+}
+
 export const jev = {
   create(t: QueryType, obj: QuestionSpec | ChoiceSpec | ScoreSpec): object {
     const prompt = obj?.prompt;
@@ -91,38 +124,20 @@ export const jev = {
   // Raw response json in, branch-ready result out. Null when there is no
   // `answers.answer` to read.
   parse(raw: unknown): JevResult | null {
-    const answer = (raw as any)?.answers?.answer;
-    if (!answer || typeof answer !== "object") return null;
-    const probabilities: Record<string, number> | undefined =
-      answer.type === "noul" && typeof answer.noul === "number"
-        ? { true: answer.noul, false: Math.round((1 - answer.noul) * 1e6) / 1e6 }
-        : answer.probabilities;
-    if (!probabilities || Object.keys(probabilities).length === 0) return null;
-    // Score keys are level numbers; the legend turns them into names.
-    const name = (k: string) => answer.legend?.[k] ?? k;
-    const entries = Object.entries(probabilities) as [string, number][];
-    const first = name(entries.reduce((a, b) => (b[1] > a[1] ? b : a))[0]);
-    const last = name(entries.reduce((a, b) => (b[1] < a[1] ? b : a))[0]);
-    const usage = (raw as any).usage;
-    return {
-      type: answer.type,
-      ...(answer.confidence !== undefined && { confidence: answer.confidence }),
-      probabilities,
-      ...(answer.legend && { legend: answer.legend }),
-      ...(answer.type === "score" && { position: answer.score }),
-      first,
-      last,
-      ...(usage && { usage }),
-      get value() {
-        return first;
-      },
-      get max() {
-        return first;
-      },
-      get min() {
-        return last;
-      },
-    };
+    return normalizeAnswer((raw as any)?.answers?.answer, (raw as any)?.usage);
+  },
+
+  // Batched requests carry several questions over one state; normalize every
+  // answer in the response, keyed as sent.
+  parseAnswers(raw: unknown): Record<string, JevResult> {
+    const answers = (raw as any)?.answers;
+    if (!answers || typeof answers !== "object") return {};
+    const out: Record<string, JevResult> = {};
+    for (const [key, a] of Object.entries(answers)) {
+      const r = normalizeAnswer(a, (raw as any).usage);
+      if (r) out[key] = r;
+    }
+    return out;
   },
 
   async send(body: unknown, fetchImpl: typeof fetch = fetch): Promise<JevResult | null | Error> {

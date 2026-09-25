@@ -1,0 +1,79 @@
+:root {
+  --bg: #0d1021;
+  --panel: #161a33;
+  --ink: #e8e4d8;
+  --dim: #8b90ad;
+  --gold: #e8b64c;
+  --teal: #4cc9b0;
+  --rose: #e85c8a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 1.2rem 1.6rem 3rem;
+  background: radial-gradient(ellipse at top, #141936 0%, var(--bg) 60%);
+  color: var(--ink);
+  font-family: "Iosevka", "JetBrains Mono", ui-monospace, monospace;
+}
+
+header h1 { margin: 0; font-size: 1.7rem; letter-spacing: 0.04em; }
+.swan { filter: drop-shadow(0 0 6px var(--teal)); }
+.tag { margin: 0.2rem 0 1rem; color: var(--dim); }
+
+#controls { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+
+button, .filebtn, select {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid #2a3055;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font: inherit;
+  cursor: pointer;
+}
+button:hover, .filebtn:hover { border-color: var(--gold); }
+button:disabled { opacity: 0.4; cursor: default; }
+.filebtn input { display: none; }
+#rip { border-color: var(--gold); color: var(--gold); }
+#status { color: var(--dim); margin-left: 0.4rem; }
+
+#stage {
+  background: var(--panel);
+  border: 1px solid #2a3055;
+  border-radius: 12px;
+  padding: 0.6rem;
+  overflow-x: auto;
+}
+canvas { display: block; }
+
+#motifs { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1rem; }
+
+.motif {
+  background: var(--panel);
+  border: 1px solid #2a3055;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+  min-width: 220px;
+}
+.motif:hover { border-color: var(--teal); }
+.motif.active { border-color: var(--gold); box-shadow: 0 0 12px rgba(232, 182, 76, 0.25); }
+
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  margin-bottom: 0.35rem;
+}
+.badge.l3 { background: var(--gold); color: #1a1503; }
+.badge.l2 { background: var(--teal); color: #04231c; }
+.badge.l1 { background: #3a4270; color: var(--ink); }
+.badge.l0 { background: #262b4a; color: var(--dim); }
+
+.motif .unit { color: var(--dim); font-size: 0.8rem; }
+.motif .preview { margin-top: 0.25rem; font-size: 0.9rem; }
+.motif .meta { color: var(--dim); font-size: 0.75rem; margin-top: 0.25rem; }

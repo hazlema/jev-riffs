@@ -1,36 +1,37 @@
 import { test, expect } from "bun:test";
 import { rip, SIGNIFICANCE_LEVELS } from "./rip";
 
-function queuedFetch(bodies: unknown[]): typeof fetch {
+function queuedFetch(bodies: unknown[], sent: any[] = []): typeof fetch {
   const queue = [...bodies];
-  return (async () => {
+  return (async (_url: any, init: any) => {
+    sent.push(JSON.parse(init.body));
     const body = queue.shift();
-    if (body === undefined) throw new Error("mock queue empty — judged too many candidates");
+    if (body === undefined) throw new Error("mock queue empty — too many requests");
     return new Response(JSON.stringify(body), { status: 200 });
   }) as typeof fetch;
 }
 
 // A live-shaped score answer: weighted position + winner level.
-const score = (s: number, winner: number) => ({
-  answers: {
-    answer: {
-      type: "score",
-      score: s,
-      confidence: 0.7,
-      legend: Object.fromEntries(SIGNIFICANCE_LEVELS.map((l, i) => [String(i), l])),
-      probabilities: Object.fromEntries(
-        SIGNIFICANCE_LEVELS.map((_, i) => [String(i), i === winner ? 1 : 0])
-      ),
-    },
-  },
+const scoreAns = (s: number, winner: number) => ({
+  type: "score",
+  score: s,
+  confidence: 0.7,
+  legend: Object.fromEntries(SIGNIFICANCE_LEVELS.map((l, i) => [String(i), l])),
+  probabilities: Object.fromEntries(
+    SIGNIFICANCE_LEVELS.map((_, i) => [String(i), i === winner ? 1 : 0])
+  ),
 });
 
 // Candidates arrive deduped+ranked: [1,2]×4 then [7,8,9]×2.
 const SEQ = [1, 2, 1, 2, 1, 2, 5, 7, 8, 9, 7, 8, 9, 0, 1, 2];
 
-test("grades candidates by score and sorts by significance", async () => {
+test("judges all candidates in one batched request and sorts by significance", async () => {
   process.env.TYPESAFE_API_KEY = "test-key";
-  const script = queuedFetch([score(1.2, 1), score(2.9, 3)]);
+  const sent: any[] = [];
+  const script = queuedFetch(
+    [{ answers: { c0: scoreAns(1.2, 1), c1: scoreAns(2.9, 3) } }],
+    sent
+  );
   const res = await rip(SEQ, 100, script);
   expect(res).toEqual({
     motifs: [
@@ -49,14 +50,21 @@ test("grades candidates by score and sorts by significance", async () => {
         occurrences: [0, 2, 4, 14],
       },
     ],
-    tries: 2,
+    tries: 1,
     budgetExhausted: false,
   });
+  // one request, both questions aboard, state shared
+  expect(sent.length).toBe(1);
+  expect(Object.keys(sent[0].questions)).toEqual(["c0", "c1"]);
+  expect(sent[0].state.intervals).toEqual(SEQ);
+  expect(sent[0].state.candidates).toEqual({ c0: [1, 2], c1: [7, 8, 9] });
 });
 
-test("stops at the budget ceiling and flags it", async () => {
+test("chunks respect the request budget and flag exhaustion", async () => {
   process.env.TYPESAFE_API_KEY = "test-key";
-  const res = await rip(SEQ, 1, queuedFetch([score(0.4, 0)]));
+  // chunkSize 1 → one request per candidate; budget 1 → second chunk unjudged
+  const script = queuedFetch([{ answers: { c0: scoreAns(0.4, 0) } }]);
+  const res = await rip(SEQ, 1, script, false, 1);
   expect(res).toEqual({
     motifs: [
       {
@@ -72,7 +80,7 @@ test("stops at the budget ceiling and flags it", async () => {
   });
 });
 
-test("returns the Error when a judgment fails", async () => {
+test("returns the Error when the request fails", async () => {
   process.env.TYPESAFE_API_KEY = "test-key";
   const broken = (async () => new Response("boom", { status: 500 })) as typeof fetch;
   expect(await rip(SEQ, 100, broken)).toBeInstanceOf(Error);

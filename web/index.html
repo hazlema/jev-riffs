@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>jev-riffs — music pattern ripper</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>jev‑riffs <span class="swan">🦢</span></h1>
+    <p class="tag">drop a midi &middot; see its bones &middot; rip its riffs</p>
+  </header>
+
+  <section id="controls">
+    <button id="demo">Load Swan Lake demo</button>
+    <label class="filebtn">Open .mid<input id="file" type="file" accept=".mid,.midi" /></label>
+    <select id="track" disabled></select>
+    <button id="rip" disabled>Rip patterns</button>
+    <span id="status"></span>
+  </section>
+
+  <section id="stage">
+    <canvas id="roll" width="1100" height="420"></canvas>
+  </section>
+
+  <section id="motifs"></section>
+
+  <script src="/app.js"></script>
+</body>
+</html>

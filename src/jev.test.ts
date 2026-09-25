@@ -215,3 +215,32 @@ test("send returns an Error instead of throwing on auth failure", async () => {
   expect(res).toBeInstanceOf(Error);
   expect(String(res)).toMatch(/401/);
 });
+
+// --- parseAnswers (batched multi-question responses) ---
+
+test("parseAnswers normalizes every answer in a batched response", () => {
+  const raw = {
+    model: "jev-1.13.0",
+    answers: {
+      q0: { type: "noul", noul: 0.9 },
+      q1: {
+        type: "choice",
+        choice: "b",
+        confidence: 0.8,
+        probabilities: { a: 0.2, b: 0.8 },
+      },
+    },
+    usage: { input_tokens: 50, output_tokens: 9 },
+  };
+  const all = jev.parseAnswers(raw);
+  expect(Object.keys(all)).toEqual(["q0", "q1"]);
+  expect(all.q0.value).toBe("true");
+  expect(all.q0.probabilities).toEqual({ true: 0.9, false: 0.1 });
+  expect(all.q1.value).toBe("b");
+  expect(all.q1.usage).toEqual({ input_tokens: 50, output_tokens: 9 });
+});
+
+test("parseAnswers returns empty for junk", () => {
+  expect(jev.parseAnswers(null)).toEqual({});
+  expect(jev.parseAnswers({ answers: "x" })).toEqual({});
+});

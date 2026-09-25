@@ -1,0 +1,9 @@
+{
+  "name": "jev-riffs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "patterns": "bun src/patterns.ts",
+    "test": "bun test"
+  }
+}
